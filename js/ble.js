@@ -64,18 +64,19 @@ const BLEManager = (function () {
         }
     }
 
-	async function send(payload) {
-		if (!rxCharacteristic) return;
-		try {
-			const encoder = new TextEncoder();
-			// Append explicit newline '\n' to signify frame completion
-			const data = encoder.encode(payload.trim() + '\n');
-			await rxCharacteristic.writeValueWithResponse(data);
-			window.App.log('tx', `-> ${payload}`);
-		} catch (err) {
-			window.App.log('err', `TX Error: ${err.message}`);
-		}
-	}
+    async function send(payload) {
+        if (!rxCharacteristic) return;
+        try {
+            const encoder = new TextEncoder();
+            // Append explicit newline without slicing
+            const data = encoder.encode(payload + '\n');
+			console.log(payload);
+            await rxCharacteristic.writeValue(data);
+            window.App.log('tx', `-> ${payload}`);
+        } catch (err) {
+            window.App.log('err', `TX Error: ${err.message}`);
+        }
+    }
 
     function onNotification(callback) {
         notificationCallbacks.push(callback);
