@@ -27,6 +27,7 @@ const TrafficModule = (function () {
 
         // Transmit exact command payload (PUB traffic/state RED)
         const payload = `PUB traffic/state ${currentColor}`;
+		console.log(payload);
         await BLEManager.send(payload);
     }
 

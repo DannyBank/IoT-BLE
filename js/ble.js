@@ -70,6 +70,7 @@ const BLEManager = (function () {
             const encoder = new TextEncoder();
             // Append explicit newline without slicing
             const data = encoder.encode(payload + '\n');
+			console.log(payload);
             await rxCharacteristic.writeValue(data);
             window.App.log('tx', `-> ${payload}`);
         } catch (err) {
