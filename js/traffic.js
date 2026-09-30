@@ -16,21 +16,30 @@ const TrafficModule = (function () {
     }
 
     async function setLight(color) {
-        currentColor = color;
-        Object.keys(lights).forEach(c => lights[c].classList.remove('active'));
-        if (lights[color]) lights[color].classList.add('active');
+        // Ensure color name is uppercase and exact string
+        currentColor = String(color).trim().toUpperCase();
 
-        await BLEManager.send(`PUB traffic/state ${color}`);
+        // Update web UI preview state
+        Object.keys(lights).forEach(c => lights[c].classList.remove('active'));
+        if (lights[currentColor]) {
+            lights[currentColor].classList.add('active');
+        }
+
+        // Transmit exact command payload (PUB traffic/state RED)
+        const payload = `PUB traffic/state ${currentColor}`;
+        await BLEManager.send(payload);
     }
 
     async function fade(direction) {
-        const cmd = `PUB traffic/fade ${direction}:${currentColor}`;
-        await BLEManager.send(cmd);
+        const dir = String(direction).trim().toUpperCase();
+        // Transmit exact format expected by MicroPython (e.g. PUB traffic/fade IN:RED)
+        const payload = `PUB traffic/fade ${dir}:${currentColor}`;
+        await BLEManager.send(payload);
     }
 
     function setEnabled(enabled) {
-        btnFadeIn.disabled = !enabled;
-        btnFadeOut.disabled = !enabled;
+        if (btnFadeIn) btnFadeIn.disabled = !enabled;
+        if (btnFadeOut) btnFadeOut.disabled = !enabled;
     }
 
     return { init, setLight, fade, setEnabled };

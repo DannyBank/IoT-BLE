@@ -68,7 +68,9 @@ const BLEManager = (function () {
         if (!rxCharacteristic) return;
         try {
             const encoder = new TextEncoder();
-            await rxCharacteristic.writeValue(encoder.encode(payload + '\n'));
+            // Append explicit newline without slicing
+            const data = encoder.encode(payload + '\n');
+            await rxCharacteristic.writeValue(data);
             window.App.log('tx', `-> ${payload}`);
         } catch (err) {
             window.App.log('err', `TX Error: ${err.message}`);
