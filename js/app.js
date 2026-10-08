@@ -1,28 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
-    initTabs();
-    initRingControls();
-    initServoControls();
-    initBuzzerControls();
-    initSensorChart();
+    // Safely initialize controls if functions are loaded
+    if (typeof initTabs === "function") initTabs();
+    if (typeof initRingControls === "function") initRingControls();
+    if (typeof initServoControls === "function") initServoControls();
+    if (typeof initBuzzerControls === "function") initBuzzerControls();
+    if (typeof initSensorChart === "function") initSensorChart();
 
     const connectBtn = document.getElementById("btn-connect");
-
     if (connectBtn) {
         connectBtn.addEventListener("click", async () => {
-            // Check if Web Bluetooth API is supported
             if (!navigator.bluetooth) {
-                alert("Web Bluetooth is not supported in this browser or context.\n\nMake sure:\n1. You are using Chrome, Edge, or Opera.\n2. You are using HTTPS or http://localhost (file:// is not supported).");
+                alert("Web Bluetooth is not supported in this browser context.\nPlease run on HTTPS or http://localhost using Chrome/Edge.");
                 return;
             }
-
             try {
                 await bleManager.connect();
             } catch (err) {
-                console.error("BLE Connect Exception:", err);
+                console.error("BLE Connect Error:", err);
             }
         });
-    } else {
-        console.error("Connect button ('btn-connect') not found in DOM.");
     }
 
     const clearLogsBtn = document.getElementById("btn-clear-logs");
@@ -55,11 +51,11 @@ function parseIncomingMessage(msg) {
             const payload = parts.slice(2).join(":");
 
             if (topic === "motion/state") {
-                updateMotionState(payload);
+                if (typeof updateMotionState === "function") updateMotionState(payload);
             } else if (topic === "buzzer/status") {
-                updateBuzzerStatus(payload);
+                if (typeof updateBuzzerStatus === "function") updateBuzzerStatus(payload);
             } else {
-                updateSensorData(topic, payload);
+                if (typeof updateSensorData === "function") updateSensorData(topic, payload);
             }
         }
     }
