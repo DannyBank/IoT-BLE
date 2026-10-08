@@ -5,13 +5,32 @@ document.addEventListener("DOMContentLoaded", () => {
     initBuzzerControls();
     initSensorChart();
 
-    document.getElementById("btn-connect").addEventListener("click", () => {
-        bleManager.connect();
-    });
+    const connectBtn = document.getElementById("btn-connect");
 
-    document.getElementById("btn-clear-logs").addEventListener("click", () => {
-        document.getElementById("console-log").innerHTML = "";
-    });
+    if (connectBtn) {
+        connectBtn.addEventListener("click", async () => {
+            // Check if Web Bluetooth API is supported
+            if (!navigator.bluetooth) {
+                alert("Web Bluetooth is not supported in this browser or context.\n\nMake sure:\n1. You are using Chrome, Edge, or Opera.\n2. You are using HTTPS or http://localhost (file:// is not supported).");
+                return;
+            }
+
+            try {
+                await bleManager.connect();
+            } catch (err) {
+                console.error("BLE Connect Exception:", err);
+            }
+        });
+    } else {
+        console.error("Connect button ('btn-connect') not found in DOM.");
+    }
+
+    const clearLogsBtn = document.getElementById("btn-clear-logs");
+    if (clearLogsBtn) {
+        clearLogsBtn.addEventListener("click", () => {
+            document.getElementById("console-log").innerHTML = "";
+        });
+    }
 
     bleManager.onMessageCallback = (msg) => {
         parseIncomingMessage(msg);
