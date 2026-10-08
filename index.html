@@ -23,221 +23,241 @@
     </header>
 
     <main class="dashboard-container">
-        <!-- Navigation Tabs -->
+        <!-- Navigation Tabs for Every Device -->
         <nav class="tabs-nav">
-            <button class="tab-btn active" data-tab="tab-actuators"><i class="fa-solid fa-gamepad"></i> Actuators</button>
-            <button class="tab-btn" data-tab="tab-sensors"><i class="fa-solid fa-chart-line"></i> Sensors & Environmental</button>
+            <button class="tab-btn active" data-tab="tab-ring"><i class="fa-solid fa-circle-notch"></i> NeoPixel Ring</button>
+            <button class="tab-btn" data-tab="tab-servo"><i class="fa-solid fa-compass"></i> Servo Motor</button>
+            <button class="tab-btn" data-tab="tab-traffic"><i class="fa-solid fa-traffic-light"></i> Traffic Light</button>
+            <button class="tab-btn" data-tab="tab-buzzer"><i class="fa-solid fa-volume-high"></i> Buzzer</button>
+            <button class="tab-btn" data-tab="tab-button"><i class="fa-solid fa-hand-pointer"></i> Push Button</button>
+            <button class="tab-btn" data-tab="tab-pir"><i class="fa-solid fa-person-walking"></i> PIR Motion</button>
+            <button class="tab-btn" data-tab="tab-dht11"><i class="fa-solid fa-temperature-three-quarters"></i> DHT11</button>
+            <button class="tab-btn" data-tab="tab-aht20-bmp280"><i class="fa-solid fa-cloud-sun"></i> AHT20 + BMP280</button>
+            <button class="tab-btn" data-tab="tab-temt6000"><i class="fa-solid fa-sun"></i> TEMT6000</button>
+            <button class="tab-btn" data-tab="tab-analytics"><i class="fa-solid fa-chart-area"></i> Analytics</button>
             <button class="tab-btn" data-tab="tab-logs"><i class="fa-solid fa-terminal"></i> Console Logs</button>
         </nav>
 
-        <!-- TAB 1: ACTUATORS -->
-        <section id="tab-actuators" class="tab-content active">
-            <div class="grid-container">
-
-                <!-- NeoPixel Ring Control -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-circle-notch"></i> NeoPixel Ring</h3>
-                        <label class="switch">
-                            <input type="checkbox" id="ring-power-toggle">
-                            <span class="slider round"></span>
-                        </label>
+        <!-- DEVICE TAB 1: NEOPIXEL RING -->
+        <section id="tab-ring" class="tab-content active">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-circle-notch"></i> NeoPixel RGB LED Ring</h3>
+                    <label class="switch">
+                        <input type="checkbox" id="ring-power-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="card-body">
+                    <label>Preset Colors:</label>
+                    <div class="color-presets">
+                        <button class="color-btn" data-color="RED" style="background:#ff4d4d;"></button>
+                        <button class="color-btn" data-color="GREEN" style="background:#2ecc71;"></button>
+                        <button class="color-btn" data-color="BLUE" style="background:#3498db;"></button>
+                        <button class="color-btn" data-color="YELLOW" style="background:#f1c40f;"></button>
+                        <button class="color-btn" data-color="PURPLE" style="background:#9b59b6;"></button>
+                        <button class="color-btn" data-color="WHITE" style="background:#ffffff;"></button>
                     </div>
-                    <div class="card-body">
-                        <label>Preset Color:</label>
-                        <div class="color-presets">
-                            <button class="color-btn" data-color="RED" style="background:#ff4d4d;"></button>
-                            <button class="color-btn" data-color="GREEN" style="background:#2ecc71;"></button>
-                            <button class="color-btn" data-color="BLUE" style="background:#3498db;"></button>
-                            <button class="color-btn" data-color="YELLOW" style="background:#f1c40f;"></button>
-                            <button class="color-btn" data-color="PURPLE" style="background:#9b59b6;"></button>
-                            <button class="color-btn" data-color="WHITE" style="background:#ffffff;"></button>
-                        </div>
-                        <div class="input-group">
-                            <label for="ring-custom-color">Custom RGB Color:</label>
-                            <input type="color" id="ring-custom-color" value="#ffffff">
-                            <button id="btn-set-rgb" class="btn btn-secondary">Apply RGB</button>
-                        </div>
+                    <div class="input-group">
+                        <label for="ring-custom-color">Custom RGB Color Picker:</label>
+                        <input type="color" id="ring-custom-color" value="#ffffff">
+                        <button id="btn-set-rgb" class="btn btn-secondary">Apply RGB</button>
                     </div>
                 </div>
-
-                <!-- Servo Motor Control -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-compass"></i> Servo Motor</h3>
-                        <span id="servo-angle-val" class="badge">0°</span>
-                    </div>
-                    <div class="card-body">
-                        <label for="servo-slider">Angle (0 - 180°):</label>
-                        <input type="range" id="servo-slider" min="0" max="180" value="0" class="range-slider">
-                        <div class="preset-angles">
-                            <button class="btn btn-sm btn-outline" onclick="setServoAngle(0)">0°</button>
-                            <button class="btn btn-sm btn-outline" onclick="setServoAngle(90)">90°</button>
-                            <button class="btn btn-sm btn-outline" onclick="setServoAngle(180)">180°</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Traffic Light Control -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-traffic-light"></i> Traffic Light Signals</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="traffic-buttons">
-                            <button class="btn btn-danger" onclick="setTraffic('RED')">Red</button>
-                            <button class="btn btn-warning" onclick="setTraffic('YELLOW')">Yellow</button>
-                            <button class="btn btn-success" onclick="setTraffic('GREEN')">Green</button>
-                            <button class="btn btn-dark" onclick="setTraffic('OFF')">All Off</button>
-                        </div>
-                        <hr>
-                        <label>Fade Light:</label>
-                        <div class="input-group">
-                            <select id="fade-color-select">
-                                <option value="RED">Red</option>
-                                <option value="YELLOW">Yellow</option>
-                                <option value="GREEN">Green</option>
-                            </select>
-                            <button class="btn btn-secondary" onclick="fadeTraffic('IN')">Fade IN</button>
-                            <button class="btn btn-secondary" onclick="fadeTraffic('OUT')">Fade OUT</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Buzzer Control (NEW ACTUATOR) -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-volume-high"></i> Piezo Buzzer</h3>
-                        <span id="buzzer-status-badge" class="badge badge-off">OFF</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="button-row">
-                            <button id="btn-buzzer-on" class="btn btn-danger"><i class="fa-solid fa-bell"></i> Alarm ON</button>
-                            <button id="btn-buzzer-off" class="btn btn-secondary"><i class="fa-solid fa-bell-slash"></i> Mute OFF</button>
-                        </div>
-                        <div class="input-group margin-top">
-                            <label for="buzzer-freq">Tone Frequency (Hz):</label>
-                            <input type="number" id="buzzer-freq" value="2000" min="100" max="5000" step="50">
-                            <button id="btn-buzzer-freq" class="btn btn-primary">Play Frequency</button>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </section>
 
-        <!-- TAB 2: SENSORS & ENVIRONMENTAL -->
-        <section id="tab-sensors" class="tab-content">
-            <div class="grid-container">
-
-                <!-- Motion & Physical Button Status -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-shield-halved"></i> Digital State Inputs</h3>
-                    </div>
-                    <div class="card-body display-flex-gap">
-                        <!-- PIR Motion -->
-                        <div class="sensor-tile">
-                            <i class="fa-solid fa-person-walking sensor-icon" id="pir-icon"></i>
-                            <div class="sensor-meta">
-                                <span class="sensor-title">PIR Motion</span>
-                                <span class="sensor-value" id="pir-value">NO MOTION</span>
-                            </div>
-                        </div>
-
-                        <!-- Push Button -->
-                        <div class="sensor-tile">
-                            <i class="fa-solid fa-hand-pointer sensor-icon" id="button-icon"></i>
-                            <div class="sensor-meta">
-                                <span class="sensor-title">Push Button</span>
-                                <span class="sensor-value" id="button-value">RELEASED</span>
-                            </div>
-                        </div>
+        <!-- DEVICE TAB 2: SERVO MOTOR -->
+        <section id="tab-servo" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-compass"></i> Servo Motor Control</h3>
+                    <span id="servo-angle-val" class="badge">0°</span>
+                </div>
+                <div class="card-body">
+                    <label for="servo-slider">Angle Position (0 - 180°):</label>
+                    <input type="range" id="servo-slider" min="0" max="180" value="0" class="range-slider">
+                    <div class="preset-angles margin-top">
+                        <button class="btn btn-outline" onclick="setServoAngle(0)">0° (Home)</button>
+                        <button class="btn btn-outline" onclick="setServoAngle(90)">90° (Mid)</button>
+                        <button class="btn btn-outline" onclick="setServoAngle(180)">180° (Max)</button>
                     </div>
                 </div>
-
-                <!-- DHT11 Sensor Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-temperature-three-quarters"></i> DHT11 Sensor</h3>
-                    </div>
-                    <div class="card-body metrics-grid">
-                        <div class="metric-box">
-                            <i class="fa-solid fa-temperature-high text-red"></i>
-                            <span class="metric-val" id="dht11-temp">-- °C</span>
-                            <span class="metric-lbl">Temperature</span>
-                        </div>
-                        <div class="metric-box">
-                            <i class="fa-solid fa-droplet text-blue"></i>
-                            <span class="metric-val" id="dht11-hum">-- %</span>
-                            <span class="metric-lbl">Humidity</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AHT20 + BMP280 Environmental Combo -->
-                <div class="card card-wide">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-cloud-sun"></i> AHT20 + BMP280 High Precision Combo</h3>
-                    </div>
-                    <div class="card-body metrics-grid3">
-                        <div class="metric-box">
-                            <i class="fa-solid fa-temperature-arrow-up text-orange"></i>
-                            <span class="metric-val" id="aht20-temp">-- °C</span>
-                            <span class="metric-lbl">AHT20 Temp</span>
-                        </div>
-                        <div class="metric-box">
-                            <i class="fa-solid fa-water text-cyan"></i>
-                            <span class="metric-val" id="aht20-hum">-- %</span>
-                            <span class="metric-lbl">AHT20 Humidity</span>
-                        </div>
-                        <div class="metric-box">
-                            <i class="fa-solid fa-gauge-high text-purple"></i>
-                            <span class="metric-val" id="bmp280-press">-- hPa</span>
-                            <span class="metric-lbl">BMP280 Pressure</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TEMT6000 Ambient Light Sensor -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-sun"></i> TEMT6000 Ambient Light</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="light-gauge-container">
-                            <div class="light-value-display">
-                                <span id="temt6000-light-percent">-- %</span>
-                                <small id="temt6000-raw-val">Raw ADC: --</small>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div id="temt6000-bar" class="progress-bar-fill" style="width: 0%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Environmental Live Chart -->
-                <div class="card card-full">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-chart-area"></i> Real-time Environmental Trends</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-wrapper">
-                            <canvas id="envChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </section>
 
-        <!-- TAB 3: CONSOLE LOGS -->
+        <!-- DEVICE TAB 3: TRAFFIC LIGHT -->
+        <section id="tab-traffic" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-traffic-light"></i> Traffic Light Signal Control</h3>
+                </div>
+                <div class="card-body">
+                    <div class="traffic-buttons">
+                        <button class="btn btn-danger" onclick="setTraffic('RED')">Red Signal</button>
+                        <button class="btn btn-warning" onclick="setTraffic('YELLOW')">Yellow Signal</button>
+                        <button class="btn btn-success" onclick="setTraffic('GREEN')">Green Signal</button>
+                        <button class="btn btn-dark" onclick="setTraffic('OFF')">All Signals Off</button>
+                    </div>
+                    <hr class="margin-top margin-bottom">
+                    <h4>Fade Animations</h4>
+                    <div class="input-group margin-top">
+                        <select id="fade-color-select">
+                            <option value="RED">Red Light</option>
+                            <option value="YELLOW">Yellow Light</option>
+                            <option value="GREEN">Green Light</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="fadeTraffic('IN')">Fade IN</button>
+                        <button class="btn btn-secondary" onclick="fadeTraffic('OUT')">Fade OUT</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 4: BUZZER -->
+        <section id="tab-buzzer" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-volume-high"></i> Piezo Buzzer Actuator</h3>
+                    <span id="buzzer-status-badge" class="badge badge-off">OFF</span>
+                </div>
+                <div class="card-body">
+                    <div class="button-row">
+                        <button id="btn-buzzer-on" class="btn btn-danger"><i class="fa-solid fa-bell"></i> Alarm ON (2000Hz)</button>
+                        <button id="btn-buzzer-off" class="btn btn-secondary"><i class="fa-solid fa-bell-slash"></i> Mute OFF</button>
+                    </div>
+                    <div class="input-group margin-top">
+                        <label for="buzzer-freq">Custom Tone Frequency (Hz):</label>
+                        <input type="number" id="buzzer-freq" value="2000" min="100" max="5000" step="50">
+                        <button id="btn-buzzer-freq" class="btn btn-primary">Play Tone</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 5: PUSH BUTTON -->
+        <section id="tab-button" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-hand-pointer"></i> Physical Push Button Input</h3>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-tile">
+                        <i class="fa-solid fa-hand-pointer sensor-icon" id="button-icon"></i>
+                        <div class="sensor-meta">
+                            <span class="sensor-title">Digital State</span>
+                            <span class="sensor-value" id="button-value">RELEASED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 6: PIR MOTION -->
+        <section id="tab-pir" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-person-walking"></i> PIR Motion Sensor</h3>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-tile">
+                        <i class="fa-solid fa-person-walking sensor-icon" id="pir-icon"></i>
+                        <div class="sensor-meta">
+                            <span class="sensor-title">Motion Sensor Status</span>
+                            <span class="sensor-value" id="pir-value">NO MOTION</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 7: DHT11 -->
+        <section id="tab-dht11" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-temperature-three-quarters"></i> DHT11 Environmental Sensor</h3>
+                </div>
+                <div class="card-body metrics-grid">
+                    <div class="metric-box">
+                        <i class="fa-solid fa-temperature-high text-red"></i>
+                        <span class="metric-val" id="dht11-temp">-- °C</span>
+                        <span class="metric-lbl">Temperature</span>
+                    </div>
+                    <div class="metric-box">
+                        <i class="fa-solid fa-droplet text-blue"></i>
+                        <span class="metric-val" id="dht11-hum">-- %</span>
+                        <span class="metric-lbl">Relative Humidity</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 8: AHT20 + BMP280 -->
+        <section id="tab-aht20-bmp280" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-cloud-sun"></i> AHT20 + BMP280 Sensor Combo</h3>
+                </div>
+                <div class="card-body metrics-grid3">
+                    <div class="metric-box">
+                        <i class="fa-solid fa-temperature-arrow-up text-orange"></i>
+                        <span class="metric-val" id="aht20-temp">-- °C</span>
+                        <span class="metric-lbl">AHT20 Temp</span>
+                    </div>
+                    <div class="metric-box">
+                        <i class="fa-solid fa-water text-cyan"></i>
+                        <span class="metric-val" id="aht20-hum">-- %</span>
+                        <span class="metric-lbl">AHT20 Humidity</span>
+                    </div>
+                    <div class="metric-box">
+                        <i class="fa-solid fa-gauge-high text-purple"></i>
+                        <span class="metric-val" id="bmp280-press">-- hPa</span>
+                        <span class="metric-lbl">BMP280 Barometric Pressure</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 9: TEMT6000 -->
+        <section id="tab-temt6000" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-sun"></i> TEMT6000 Ambient Light Sensor</h3>
+                </div>
+                <div class="card-body">
+                    <div class="light-gauge-container">
+                        <div class="light-value-display">
+                            <span id="temt6000-light-percent">-- %</span>
+                            <small id="temt6000-raw-val">Raw ADC Value: --</small>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="temt6000-bar" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 10: REAL-TIME ANALYTICS -->
+        <section id="tab-analytics" class="tab-content">
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-chart-area"></i> Multi-Sensor Real-Time Trends</h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper">
+                        <canvas id="envChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEVICE TAB 11: CONSOLE LOGS -->
         <section id="tab-logs" class="tab-content">
             <div class="card card-full">
                 <div class="card-header">
-                    <h3><i class="fa-solid fa-code"></i> Live MQTT & BLE Communication Log</h3>
-                    <button id="btn-clear-logs" class="btn btn-sm btn-secondary"><i class="fa-solid fa-trash"></i> Clear</button>
+                    <h3><i class="fa-solid fa-code"></i> Live MQTT & BLE Communication Terminal</h3>
+                    <button id="btn-clear-logs" class="btn btn-sm btn-secondary"><i class="fa-solid fa-trash"></i> Clear Logs</button>
                 </div>
                 <div class="card-body">
                     <div id="console-log" class="console-box"></div>
