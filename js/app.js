@@ -1,62 +1,73 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // Safely initialize controls if functions are loaded
-    if (typeof initTabs === "function") initTabs();
-    if (typeof initRingControls === "function") initRingControls();
-    if (typeof initServoControls === "function") initServoControls();
-    if (typeof initBuzzerControls === "function") initBuzzerControls();
-    if (typeof initSensorChart === "function") initSensorChart();
+// Main Application Controller
+window.App = (function () {
+    const connectBtn = document.getElementById('connectBtn');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const terminal = document.getElementById('terminal');
+    const iosNotice = document.getElementById('iosNotice');
 
-    const connectBtn = document.getElementById("btn-connect");
-    if (connectBtn) {
-        connectBtn.addEventListener("click", async () => {
-            if (!navigator.bluetooth) {
-                alert("Web Bluetooth is not supported in this browser context.\nPlease run on HTTPS or http://localhost using Chrome/Edge.");
-                return;
-            }
-            try {
-                await bleManager.connect();
-            } catch (err) {
-                console.error("BLE Connect Error:", err);
-            }
-        });
-    }
+    function init() {
+        // iOS warning check
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS && !navigator.bluetooth) {
+            iosNotice.style.display = "block";
+        }
 
-    const clearLogsBtn = document.getElementById("btn-clear-logs");
-    if (clearLogsBtn) {
-        clearLogsBtn.addEventListener("click", () => {
-            document.getElementById("console-log").innerHTML = "";
-        });
-    }
+        // Initialize modules
+        TabManager.init();
+        RingModule.init();
+        MotionModule.init();
+        ServoModule.init();
+        TrafficModule.init();
+        EnvModule.init();
+        PushBuzzModule.init();
 
-    bleManager.onMessageCallback = (msg) => {
-        parseIncomingMessage(msg);
-    };
-});
-
-function logConsole(msg) {
-    const logBox = document.getElementById("console-log");
-    if (!logBox) return;
-    const time = new Date().toLocaleTimeString();
-    const line = document.createElement("div");
-    line.innerText = `[${time}] ${msg}`;
-    logBox.appendChild(line);
-    logBox.scrollTop = logBox.scrollHeight;
-}
-
-function parseIncomingMessage(msg) {
-    if (msg.startsWith("MQTT:")) {
-        const parts = msg.split(":");
-        if (parts.length >= 3) {
-            const topic = parts[1];
-            const payload = parts.slice(2).join(":");
-
-            if (topic === "motion/state") {
-                if (typeof updateMotionState === "function") updateMotionState(payload);
-            } else if (topic === "buzzer/status") {
-                if (typeof updateBuzzerStatus === "function") updateBuzzerStatus(payload);
+        // Connect button handler
+        connectBtn.addEventListener('click', () => {
+            if (BLEManager.isConnected()) {
+                BLEManager.disconnect();
             } else {
-                if (typeof updateSensorData === "function") updateSensorData(topic, payload);
+                BLEManager.connect(updateUIConnected, log);
             }
+        });
+
+        // Register Service Worker for PWA compliance
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));`;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+            });
         }
     }
-}
+
+    function updateUIConnected(isConnected, deviceName = '') {
+        if (isConnected) {
+            statusDot.classList.add('connected');
+            statusText.textContent = deviceName || 'Connected';
+            connectBtn.textContent = 'Disconnect';
+        } else {
+            statusDot.classList.remove('connected');
+            statusText.textContent = 'Disconnected';
+            connectBtn.textContent = 'Connect';
+        }
+
+        RingModule.setEnabled(isConnected);
+        ServoModule.setEnabled(isConnected);
+        TrafficModule.setEnabled(isConnected);
+        EnvModule.setEnabled(isConnected);
+        PushBuzzModule.setEnabled(isConnected);
+    }
+
+    function log(type, text) {
+        const line = document.createElement('div');
+        line.className = `terminal-line ${type}`;
+        line.textContent = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${text}`;
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    return { init, log };
+})();
+
+document.addEventListener('DOMContentLoaded', window.App.init);
