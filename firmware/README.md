@@ -28,3 +28,13 @@ Notes:
 - Open the app as `http://...` (served by the ESP32 or a local file). An `https://` page (e.g. GitHub Pages) can't open `ws://` connections - browsers block it as mixed content.
 - Up to 3 WiFi clients plus Bluetooth at once. There is no password on the WebSocket, so only run it on a network you trust.
 - If Bluetooth can't start, the device logs it and keeps working over WiFi.
+
+## Troubleshooting: neither Bluetooth nor WiFi shows up
+Open the REPL (`mpremote repl`, press Ctrl-D to soft-reboot) and read the boot log:
+- `[BOOT] imports done, free RAM: ...` then `[+] Advertising as 'ESP32-MQTT-Ring'` = Bluetooth is up.
+- `[!] wifi_link.py unavailable ...` / `ahtx0` / `bmp280` = that file isn't on the board. Run `./upload.sh` (or copy ALL of: `main.py wifi_link.py bmp280.py ahtx0.py wifi_config.py`).
+- `MemoryError` while importing: precompile the big files (`pip install mpy-cross`, `mpy-cross wifi_link.py`, then upload `wifi_link.mpy` and delete `wifi_link.py` from the board).
+- `[WiFi] Access point 'ESP32-Hub' up` = WiFi is up (the AP only appears if joining your router failed or no `wifi_config.py` exists).
+- Board keeps rebooting / `Brownout detector` = power problem. WiFi + BLE + servo + ring need a solid supply (not a weak USB port); power the servo/ring separately with a common ground.
+- Don't disable WiFi power-save (`PM_NONE`): on the ESP32 that makes Bluetooth stop advertising.
+Bluetooth now starts first; WiFi starts ~1.5 s later and any WiFi error only disables WiFi.

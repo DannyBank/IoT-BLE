@@ -11,8 +11,12 @@
 import socket
 import time
 import os
-import hashlib
-import binascii
+try:
+    import hashlib
+    import binascii
+except ImportError:           # older builds name them uhashlib / ubinascii
+    import uhashlib as hashlib
+    import ubinascii as binascii
 
 try:
     import network
@@ -75,8 +79,10 @@ class NetworkManager:
         if self.ssid:
             self._sta = network.WLAN(network.STA_IF)
             self._sta.active(True)
+            # NOTE: keep WiFi power-save ON (the default). With PM_NONE the WiFi radio hogs the
+            # antenna and Bluetooth stops advertising / drops connections on the ESP32.
             try:
-                self._sta.config(pm=network.WLAN.PM_NONE)   # lower latency next to BLE
+                self._sta.config(txpower=11)                # lower TX peaks: fewer brown-outs on USB power
             except Exception:
                 pass
             print("[WiFi] Joining '{}' ...".format(self.ssid))
@@ -88,6 +94,10 @@ class NetworkManager:
     def _start_ap(self):
         ap = network.WLAN(network.AP_IF)
         ap.active(True)
+        try:
+            ap.config(txpower=11)
+        except Exception:
+            pass
         try:
             if len(self.ap_password) >= 8:
                 ap.config(essid=self.ap_ssid, authmode=3, password=self.ap_password)   # WPA2-PSK

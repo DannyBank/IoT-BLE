@@ -4,9 +4,30 @@ import neopixel
 import dht
 from machine import Pin, PWM, ADC, I2C
 from micropython import const
-import ahtx0
-import wifi_link
-from bmp280 import BMP280
+import sys
+import gc
+
+# Optional pieces: if a file didn't get copied to the board (or won't compile for lack of
+# RAM) the hub still boots, with Bluetooth + whatever else works. Check the REPL for "[!]".
+try:
+    import ahtx0
+except Exception as e:
+    ahtx0 = None
+    print("[!] ahtx0.py unavailable - AHT20 disabled:", e)
+try:
+    from bmp280 import BMP280
+except Exception as e:
+    BMP280 = None
+    print("[!] bmp280.py unavailable - BMP280 disabled:", e)
+try:
+    import wifi_link
+except Exception as e:
+    wifi_link = None
+    print("[!] wifi_link.py unavailable - WiFi disabled:", e)
+
+WIFI_HANDLE_BASE = 1000      # WiFi client ids (BLE connection handles are small ints)
+gc.collect()
+print("[BOOT] imports done, free RAM:", gc.mem_free())
 
 # ==========================================
 # HARDWARE CONFIGURATION
@@ -145,13 +166,14 @@ bmp_sensor = None
 _i2c_devices = i2c.scan()
 print("[I2C] devices found:", [hex(a) for a in _i2c_devices])
 
-try:
-    aht_sensor = ahtx0.AHT20(i2c)
-except Exception as e:
-    print("[!] AHT20 init failed:", e)
+if ahtx0:
+    try:
+        aht_sensor = ahtx0.AHT20(i2c)
+    except Exception as e:
+        print("[!] AHT20 init failed:", e)
 
 for _addr in (0x76, 0x77):          # BMP280 boards are strapped to either address
-    if _addr in _i2c_devices:
+    if BMP280 and _addr in _i2c_devices:
         try:
             bmp_sensor = BMP280(i2c, addr=_addr)
             print("[BMP280] found at", hex(_addr))
@@ -215,9 +237,12 @@ class BLEMQTTBroker:
             print("[!] Bluetooth unavailable, continuing with WiFi only:", e)
             self._ble = None
 
-        # WiFi transport (STA with AP fallback + HTTP/WebSocket server), brought up from the main loop
-        self.net = wifi_link.NetworkManager()
+        # WiFi transport (STA with AP fallback + HTTP/WebSocket server). It is started from the
+        # main loop ~1.5 s AFTER Bluetooth is advertising, and any failure only disables WiFi.
+        self.net = None
         self.web = None
+        self._wifi_failed = wifi_link is None
+        self._wifi_start_at = time.ticks_add(time.ticks_ms(), 1500)
 
         self.connections = set()
         self._subscriptions = {}
@@ -238,6 +263,17 @@ class BLEMQTTBroker:
     # ---------- WiFi transport ----------
     def poll_wifi(self):
         """Call every loop: keeps WiFi alive, starts the server once we have an IP, services clients."""
+        if self._wifi_failed:
+            return
+        if self.net is None:
+            if time.ticks_diff(time.ticks_ms(), self._wifi_start_at) < 0:
+                return
+            try:
+                self.net = wifi_link.NetworkManager()
+            except Exception as e:
+                print("[!] WiFi start failed, continuing without it:", e)
+                self._wifi_failed = True
+                return
         self.net.poll()
         if self.web is None and self.net.ip:
             try:
@@ -340,7 +376,7 @@ class BLEMQTTBroker:
             self._subscriptions[topic].add(conn_handle)
             print("[SUB] Handle {} subscribed to: '{}'".format(conn_handle, topic))
             self.publish_to_handle(conn_handle, "ACK SUB " + topic)
-            if topic == "sys/ip" and self.net.ip:
+            if topic == "sys/ip" and self.net and self.net.ip:
                 # lets the web app learn the WiFi address while connected over Bluetooth
                 self.publish_to_handle(conn_handle, "MQTT:sys/ip:{}".format(self.net.ip))
 
@@ -519,7 +555,7 @@ class BLEMQTTBroker:
     # ---------- Notify helpers ----------
     def _notify(self, handle, data):
         """BLE: send in 20-byte chunks. WiFi: one WebSocket frame."""
-        if handle >= wifi_link.HANDLE_BASE:
+        if handle >= WIFI_HANDLE_BASE:
             if self.web:
                 self.web.send(handle, data)
             return
@@ -553,17 +589,33 @@ class BLEMQTTBroker:
 # ==========================================
 # MAIN LOOP  (save this file as main.py on the ESP32)
 # ==========================================
+def _safe(label, fn, *args):
+    """Run one step of the main loop; log and carry on if it raises."""
+    try:
+        fn(*args)
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print("[!] {} error:".format(label))
+        sys.print_exception(e)
+
+
 if __name__ == "__main__":
+    print("[BOOT] starting broker")
     broker = BLEMQTTBroker()
+    last_gc = time.ticks_ms()
 
     try:
         while True:
-            broker.poll_wifi()
-            broker.process_queue()
-            broker.check_pir_sensor()
-            broker.check_push_button()
-            broker.check_buzzer()
-            broker.poll_periodic_sensors(interval_ms=2000)
+            _safe("process_queue", broker.process_queue)
+            _safe("wifi", broker.poll_wifi)
+            _safe("pir", broker.check_pir_sensor)
+            _safe("button", broker.check_push_button)
+            _safe("buzzer", broker.check_buzzer)
+            _safe("sensors", broker.poll_periodic_sensors, 2000)
+            if time.ticks_diff(time.ticks_ms(), last_gc) > 5000:
+                last_gc = time.ticks_ms()
+                gc.collect()
             time.sleep_ms(1)
 
     except KeyboardInterrupt:
