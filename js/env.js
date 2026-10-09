@@ -16,7 +16,7 @@ const EnvModule = (function () {
             if (!topic) return;
             const card = el.closest('.env-card');
             cards[topic] = { el, card };
-            BLEManager.onTopic(topic, (payload) => {
+            Link.onTopic(topic, (payload) => {
                 show(el, payload, topic.startsWith('dht11/') ? 0 : 1);
                 touch(card);
             });
@@ -26,13 +26,13 @@ const EnvModule = (function () {
         lightVal = lightCard.querySelector('[data-v]');
         lightFill = document.getElementById('lightFill');
         const lightRaw = document.getElementById('lightRaw');
-        BLEManager.onTopic('temt6000/light', (payload) => {
+        Link.onTopic('temt6000/light', (payload) => {
             show(lightVal, payload, 1);
             const n = parseFloat(payload);
             lightFill.style.width = isNaN(n) ? '0%' : Math.min(100, n) + '%';
             touch(lightCard);
         });
-        BLEManager.onTopic('temt6000/raw', (payload) => { lightRaw.textContent = payload; });
+        Link.onTopic('temt6000/raw', (payload) => { lightRaw.textContent = payload; });
 
         setInterval(() => {
             const now = Date.now();

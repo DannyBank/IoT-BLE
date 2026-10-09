@@ -17,7 +17,7 @@
         </header>
 
         <div id="iosNotice" class="ios-warning">
-            Note for iOS users: Open this page in <strong>Bluefy</strong> or <strong>WebBLE</strong> browser app.
+            Bluetooth isn't available in this browser. Use <strong>WiFi</strong> (enter the ESP32 address above), or open this page in <strong>Bluefy</strong> / <strong>WebBLE</strong> for Bluetooth.
         </div>
 
         <!-- Connection Header Card -->
@@ -28,6 +28,14 @@
                     <span id="statusText">Disconnected</span>
                 </div>
                 <button id="connectBtn" class="btn-connect">Connect</button>
+            </div>
+            <div class="link-row">
+                <select id="transportSelect" aria-label="Connection type">
+                    <option value="auto">Auto (Bluetooth, then WiFi)</option>
+                    <option value="ble">Bluetooth only</option>
+                    <option value="wifi">WiFi only</option>
+                </select>
+                <input type="text" id="wifiHost" placeholder="ESP32 WiFi address, e.g. 192.168.1.50" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false">
             </div>
         </div>
 
@@ -200,6 +208,8 @@
 
     <!-- Modular Script Imports -->
     <script src="js/ble.js"></script>
+    <script src="js/wifi.js"></script>
+    <script src="js/link.js"></script>
     <script src="js/tabs.js"></script>
     <script src="js/ring.js"></script>
     <script src="js/motion.js"></script>

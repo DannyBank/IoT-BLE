@@ -6,7 +6,7 @@ const MotionModule = (function () {
         motionBadge = document.getElementById('motionBadge');
         motionStateText = document.getElementById('motionStateText');
 
-        BLEManager.onNotification((msg) => {
+        Link.onNotification((msg) => {
             if (msg.includes('MQTT:motion/state:')) {
                 const state = msg.split(':')[2].trim().toUpperCase();
                 updateState(state === 'TRUE' || state === 'MOTION' || state === '1');

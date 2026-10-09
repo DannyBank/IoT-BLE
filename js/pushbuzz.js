@@ -19,7 +19,7 @@ const PushBuzzModule = (function () {
         buzzFreqVal = document.getElementById('buzzFreqVal');
         patBtns = document.querySelectorAll('.buzz-pat');
 
-        BLEManager.onTopic('button/state', (p) => {
+        Link.onTopic('button/state', (p) => {
             const pressed = p === '1' || p.toUpperCase() === 'PRESSED';
             btnBadge.className = 'motion-badge ' + (pressed ? 'detected' : 'no-motion');
             btnStateText.textContent = pressed ? 'PRESSED' : 'RELEASED';
@@ -27,7 +27,7 @@ const PushBuzzModule = (function () {
         });
 
         // Firmware reports e.g. "STATE: ON", "STATE: OFF" or "STATE: 2500" (tone)
-        BLEManager.onTopic('buzzer/status', (p) => {
+        Link.onTopic('buzzer/status', (p) => {
             const v = p.replace(/^STATE:\s*/i, '').trim().toUpperCase();
             buzzerOn = v !== 'OFF' && v !== '0' && v !== '';
             buzzBadge.className = 'motion-badge buzz-badge ' + (buzzerOn ? 'detected' : 'no-motion');
@@ -37,19 +37,19 @@ const PushBuzzModule = (function () {
 
         buzzToggle.addEventListener('click', async () => {
             setHold(!holdOn);
-            await BLEManager.send(`PUB buzzer/state ${holdOn ? 'ON' : 'OFF'}`);
+            await Link.send(`PUB buzzer/state ${holdOn ? 'ON' : 'OFF'}`);
         });
-        buzzBeep.addEventListener('click', () => BLEManager.send('PUB buzzer/beep 200'));
+        buzzBeep.addEventListener('click', () => Link.send('PUB buzzer/beep 200'));
         patBtns.forEach(b => b.addEventListener('click', () => {
             setHold(false);
-            BLEManager.send(`PUB buzzer/play ${b.dataset.pat}`);
+            Link.send(`PUB buzzer/play ${b.dataset.pat}`);
         }));
 
         // Debounce slider so we don't flood the BLE link
         buzzFreq.addEventListener('input', (e) => {
             buzzFreqVal.textContent = e.target.value;
             clearTimeout(freqTimer);
-            freqTimer = setTimeout(() => BLEManager.send(`PUB buzzer/freq ${e.target.value}`), 150);
+            freqTimer = setTimeout(() => Link.send(`PUB buzzer/freq ${e.target.value}`), 150);
         });
     }
 

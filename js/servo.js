@@ -50,8 +50,8 @@ const ServoModule = (function () {
         const offset = maxDash - (angle / 180) * maxDash;
         tachoArc.style.strokeDashoffset = offset;
 
-        if (transmit && BLEManager.isConnected()) {
-            BLEManager.send(`PUB servo/angle ${angle}`);
+        if (transmit && Link.isConnected()) {
+            Link.send(`PUB servo/angle ${angle}`);
         }
     }
 

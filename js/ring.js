@@ -10,7 +10,7 @@ const RingModule = (function () {
         powerBtn.addEventListener('click', async () => {
             isPowerOn = !isPowerOn;
             const cmd = isPowerOn ? 'PUB ring/power ON' : 'PUB ring/power OFF';
-            await BLEManager.send(cmd);
+            await Link.send(cmd);
             updatePowerUI(isPowerOn);
         });
 
@@ -27,9 +27,9 @@ const RingModule = (function () {
         if (!isPowerOn) {
             isPowerOn = true;
             updatePowerUI(true);
-            await BLEManager.send('PUB ring/power ON');
+            await Link.send('PUB ring/power ON');
         }
-        await BLEManager.send(`PUB ring/color ${colorName}`);
+        await Link.send(`PUB ring/color ${colorName}`);
     }
 
     function updatePowerUI(active) {

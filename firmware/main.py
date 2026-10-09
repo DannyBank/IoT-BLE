@@ -5,6 +5,7 @@ import dht
 from machine import Pin, PWM, ADC, I2C
 from micropython import const
 import ahtx0
+import wifi_link
 from bmp280 import BMP280
 
 # ==========================================
@@ -199,14 +200,24 @@ class BLEMQTTBroker:
     DEFAULT_NAME = "ESP32-MQTT-Ring"
 
     def __init__(self, name=DEFAULT_NAME):
-        self._ble = bluetooth.BLE()
-        self._ble.active(True)
-        self._ble.irq(self._irq)
+        # Bluetooth is optional: if it can't start, the hub keeps running over WiFi only.
+        self._ble = None
+        self._handle_tx = self._handle_rx = None
+        try:
+            self._ble = bluetooth.BLE()
+            self._ble.active(True)
+            self._ble.irq(self._irq)
+            ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services(
+                (_UART_SERVICE,)
+            )
+            self._ble.gatts_set_buffer(self._handle_rx, 256)
+        except Exception as e:
+            print("[!] Bluetooth unavailable, continuing with WiFi only:", e)
+            self._ble = None
 
-        ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services(
-            (_UART_SERVICE,)
-        )
-        self._ble.gatts_set_buffer(self._handle_rx, 256)
+        # WiFi transport (STA with AP fallback + HTTP/WebSocket server), brought up from the main loop
+        self.net = wifi_link.NetworkManager()
+        self.web = None
 
         self.connections = set()
         self._subscriptions = {}
@@ -224,9 +235,32 @@ class BLEMQTTBroker:
 
         self._advertise()
 
+    # ---------- WiFi transport ----------
+    def poll_wifi(self):
+        """Call every loop: keeps WiFi alive, starts the server once we have an IP, services clients."""
+        self.net.poll()
+        if self.web is None and self.net.ip:
+            try:
+                self.web = wifi_link.WebLink(self._on_web_message, self._on_web_close)
+                print("[WiFi] Server ready on http://{}/".format(self.net.ip))
+                self.publish("sys/ip", self.net.ip)
+            except Exception as e:
+                print("[!] WiFi server failed to start:", e)
+                self.net.ip = None
+        if self.web:
+            self.web.poll()
+
+    def _on_web_message(self, handle, raw):
+        if len(self._rx_queue) < MAX_QUEUE:
+            self._rx_queue.append((handle, raw))
+
+    def _on_web_close(self, handle):
+        for topic in self._subscriptions:
+            self._subscriptions[topic].discard(handle)
+
     # ---------- Advertising ----------
     def _advertise(self, interval_us=100000):
-        if len(self.connections) >= MAX_CONNECTIONS:
+        if self._ble is None or len(self.connections) >= MAX_CONNECTIONS:
             return
 
         name_bytes = self._name.encode("utf-8")
@@ -306,6 +340,9 @@ class BLEMQTTBroker:
             self._subscriptions[topic].add(conn_handle)
             print("[SUB] Handle {} subscribed to: '{}'".format(conn_handle, topic))
             self.publish_to_handle(conn_handle, "ACK SUB " + topic)
+            if topic == "sys/ip" and self.net.ip:
+                # lets the web app learn the WiFi address while connected over Bluetooth
+                self.publish_to_handle(conn_handle, "MQTT:sys/ip:{}".format(self.net.ip))
 
         elif command == "PUB" and len(parts) >= 3:
             topic = parts[1].strip()
@@ -481,7 +518,13 @@ class BLEMQTTBroker:
 
     # ---------- Notify helpers ----------
     def _notify(self, handle, data):
-        """Send in chunks so messages longer than the MTU aren't truncated."""
+        """BLE: send in 20-byte chunks. WiFi: one WebSocket frame."""
+        if handle >= wifi_link.HANDLE_BASE:
+            if self.web:
+                self.web.send(handle, data)
+            return
+        if self._ble is None:
+            return
         try:
             for i in range(0, len(data), NOTIFY_CHUNK):
                 self._ble.gatts_notify(handle, self._handle_tx, data[i:i + NOTIFY_CHUNK])
@@ -499,11 +542,12 @@ class BLEMQTTBroker:
         self._notify(conn_handle, "{}\n".format(message).encode("utf-8"))
 
     def shutdown(self):
-        try:
-            self._ble.gap_advertise(None)
-        except Exception:
-            pass
-        self._ble.active(False)
+        if self._ble:
+            try:
+                self._ble.gap_advertise(None)
+            except Exception:
+                pass
+            self._ble.active(False)
 
 
 # ==========================================
@@ -514,6 +558,7 @@ if __name__ == "__main__":
 
     try:
         while True:
+            broker.poll_wifi()
             broker.process_queue()
             broker.check_pir_sensor()
             broker.check_push_button()

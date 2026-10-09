@@ -10,3 +10,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+# Local WiFi credentials
+firmware/wifi_config.py
+__pycache__/

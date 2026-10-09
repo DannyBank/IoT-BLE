@@ -28,14 +28,14 @@ const TrafficModule = (function () {
         // Transmit exact command payload (PUB traffic/state RED)
         const payload = `PUB traffic/state ${currentColor}`;
 		console.log(payload);
-        await BLEManager.send(payload);
+        await Link.send(payload);
     }
 
     async function fade(direction) {
         const dir = String(direction).trim().toUpperCase();
         // Transmit exact format expected by MicroPython (e.g. PUB traffic/fade IN:RED)
         const payload = `PUB traffic/fade ${dir}:${currentColor}`;
-        await BLEManager.send(payload);
+        await Link.send(payload);
     }
 
     function setEnabled(enabled) {
