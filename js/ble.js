@@ -38,10 +38,21 @@ const BLEManager = (function () {
             txCharacteristic = await service.getCharacteristic(UART_TX_CHAR_UUID);
 
             await txCharacteristic.startNotifications();
+            // The ESP32 splits messages into 20-byte BLE notifications and ends each
+            // message with '\n', so reassemble chunks into complete lines first.
+            let rxBuffer = '';
+            const decoder = new TextDecoder('utf-8');
             txCharacteristic.addEventListener('characteristicvaluechanged', (e) => {
-                const message = new TextDecoder('utf-8').decode(e.target.value).trim();
-                logCallback('rx', `<- ${message}`);
-                notificationCallbacks.forEach(cb => cb(message));
+                rxBuffer += decoder.decode(e.target.value, { stream: true });
+                let nl;
+                while ((nl = rxBuffer.indexOf('\n')) >= 0) {
+                    const message = rxBuffer.slice(0, nl).trim();
+                    rxBuffer = rxBuffer.slice(nl + 1);
+                    if (!message) continue;
+                    logCallback('rx', `<- ${message}`);
+                    notificationCallbacks.forEach(cb => cb(message));
+                }
+                if (rxBuffer.length > 512) rxBuffer = '';   // safety: never grow unbounded
             });
 
             onStateChange(true, bleDevice.name);
@@ -51,8 +62,9 @@ const BLEManager = (function () {
             await send('SUB ring/status');
             await send('SUB motion/state');
             await send('SUB traffic/status');
-            for (const t of ['light/lux', 'aht/temp', 'aht/hum', 'bmp/temp', 'bmp/hpa',
-                             'dht/temp', 'dht/hum', 'btn/state', 'buzz/on']) {
+            for (const t of ['temt6000/light', 'temt6000/raw', 'aht20/temperature', 'aht20/humidity',
+                             'bmp280/temperature', 'bmp280/pressure', 'dht11/temperature',
+                             'dht11/humidity', 'button/state', 'buzzer/status']) {
                 await send('SUB ' + t);
             }
 

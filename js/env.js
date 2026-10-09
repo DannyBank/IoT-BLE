@@ -1,7 +1,6 @@
 // Environment Sensors Module: TEMT6000, AHT20, BMP280, DHT11
 const EnvModule = (function () {
     const STALE_MS = 20000;
-    const MAX_LUX_BAR = 700;
     const cards = {};           // topic -> { el, card }
     const lastSeen = new Map(); // card element -> timestamp
     let lightCard, lightVal, lightFill;
@@ -18,7 +17,7 @@ const EnvModule = (function () {
             const card = el.closest('.env-card');
             cards[topic] = { el, card };
             BLEManager.onTopic(topic, (payload) => {
-                show(el, payload, topic.startsWith('dht/') ? 0 : 1);
+                show(el, payload, topic.startsWith('dht11/') ? 0 : 1);
                 touch(card);
             });
         });
@@ -26,12 +25,14 @@ const EnvModule = (function () {
         lightCard = document.getElementById('envLight');
         lightVal = lightCard.querySelector('[data-v]');
         lightFill = document.getElementById('lightFill');
-        BLEManager.onTopic('light/lux', (payload) => {
-            show(lightVal, payload, 0);
+        const lightRaw = document.getElementById('lightRaw');
+        BLEManager.onTopic('temt6000/light', (payload) => {
+            show(lightVal, payload, 1);
             const n = parseFloat(payload);
-            lightFill.style.width = isNaN(n) ? '0%' : Math.min(100, (n / MAX_LUX_BAR) * 100) + '%';
+            lightFill.style.width = isNaN(n) ? '0%' : Math.min(100, n) + '%';
             touch(lightCard);
         });
+        BLEManager.onTopic('temt6000/raw', (payload) => { lightRaw.textContent = payload; });
 
         setInterval(() => {
             const now = Date.now();
@@ -51,6 +52,8 @@ const EnvModule = (function () {
         if (enabled) return;
         document.querySelectorAll('#tab-env [data-v]').forEach(el => { el.textContent = '--'; });
         if (lightFill) lightFill.style.width = '0%';
+        const raw = document.getElementById('lightRaw');
+        if (raw) raw.textContent = '--';
         lastSeen.clear();
         document.querySelectorAll('#tab-env .env-card').forEach(c => c.classList.add('stale'));
     }

@@ -129,29 +129,29 @@
         <div id="tab-env" class="tab-content">
             <div class="card env-card" id="envLight">
                 <h3>TEMT6000 Ambient Light</h3>
-                <div class="env-big"><span data-v>--</span> <small>lux</small></div>
+                <div class="env-big"><span data-v>--</span> <small>% brightness</small></div>
                 <div class="light-bar"><div id="lightFill" class="light-fill"></div></div>
-                <p class="sensor-info">Topic <code>light/lux</code> (indoor estimate, saturates around 600 lux).</p>
+                <p class="sensor-info">Raw ADC: <strong id="lightRaw">--</strong> / 4095 &middot; topic <code>temt6000/light</code></p>
             </div>
             <div class="card env-card" id="envAht">
                 <h3>AHT20 Temperature &amp; Humidity</h3>
                 <div class="env-grid">
-                    <div class="env-tile"><span class="env-val" data-v="aht/temp">--</span><small>&deg;C</small></div>
-                    <div class="env-tile"><span class="env-val" data-v="aht/hum">--</span><small>% RH</small></div>
+                    <div class="env-tile"><span class="env-val" data-v="aht20/temperature">--</span><small>&deg;C</small></div>
+                    <div class="env-tile"><span class="env-val" data-v="aht20/humidity">--</span><small>% RH</small></div>
                 </div>
             </div>
             <div class="card env-card" id="envBmp">
                 <h3>BMP280 Temperature &amp; Pressure</h3>
                 <div class="env-grid">
-                    <div class="env-tile"><span class="env-val" data-v="bmp/temp">--</span><small>&deg;C</small></div>
-                    <div class="env-tile"><span class="env-val" data-v="bmp/hpa">--</span><small>hPa</small></div>
+                    <div class="env-tile"><span class="env-val" data-v="bmp280/temperature">--</span><small>&deg;C</small></div>
+                    <div class="env-tile"><span class="env-val" data-v="bmp280/pressure">--</span><small>hPa</small></div>
                 </div>
             </div>
             <div class="card env-card" id="envDht">
                 <h3>DHT11 Temperature &amp; Humidity</h3>
                 <div class="env-grid">
-                    <div class="env-tile"><span class="env-val" data-v="dht/temp">--</span><small>&deg;C</small></div>
-                    <div class="env-tile"><span class="env-val" data-v="dht/hum">--</span><small>% RH</small></div>
+                    <div class="env-tile"><span class="env-val" data-v="dht11/temperature">--</span><small>&deg;C</small></div>
+                    <div class="env-tile"><span class="env-val" data-v="dht11/humidity">--</span><small>% RH</small></div>
                 </div>
                 <p class="sensor-info">DHT11 is &plusmn;2&deg;C / &plusmn;5% RH &mdash; compare against the AHT20.</p>
             </div>
@@ -164,7 +164,7 @@
                 <div id="btnBadge" class="motion-badge no-motion">
                     <span id="btnStateText">RELEASED</span>
                 </div>
-                <p class="sensor-info">Presses this session: <strong id="btnCount">0</strong> &middot; topic <code>btn/state</code></p>
+                <p class="sensor-info">Presses this session: <strong id="btnCount">0</strong> &middot; topic <code>button/state</code></p>
             </div>
             <div class="card buzz-card">
                 <h3>Buzzer</h3>
@@ -181,7 +181,7 @@
                     <button class="btn-fade buzz-pat" data-pat="SOS" disabled>SOS</button>
                 </div>
                 <div class="color-picker-container">
-                    <label for="buzzFreq">Tone: <span id="buzzFreqVal">2000</span> Hz <small>(passive buzzer only)</small></label>
+                    <label for="buzzFreq">Tone: <span id="buzzFreqVal">2000</span> Hz </label>
                     <input type="range" id="buzzFreq" min="200" max="5000" step="100" value="2000" disabled>
                 </div>
             </div>

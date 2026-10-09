@@ -19,15 +19,17 @@ const PushBuzzModule = (function () {
         buzzFreqVal = document.getElementById('buzzFreqVal');
         patBtns = document.querySelectorAll('.buzz-pat');
 
-        BLEManager.onTopic('btn/state', (p) => {
+        BLEManager.onTopic('button/state', (p) => {
             const pressed = p === '1' || p.toUpperCase() === 'PRESSED';
             btnBadge.className = 'motion-badge ' + (pressed ? 'detected' : 'no-motion');
             btnStateText.textContent = pressed ? 'PRESSED' : 'RELEASED';
             if (pressed) btnCount.textContent = ++presses;
         });
 
-        BLEManager.onTopic('buzz/on', (p) => {
-            buzzerOn = p === '1' || p.toUpperCase() === 'ON';
+        // Firmware reports e.g. "STATE: ON", "STATE: OFF" or "STATE: 2500" (tone)
+        BLEManager.onTopic('buzzer/status', (p) => {
+            const v = p.replace(/^STATE:\s*/i, '').trim().toUpperCase();
+            buzzerOn = v !== 'OFF' && v !== '0' && v !== '';
             buzzBadge.className = 'motion-badge buzz-badge ' + (buzzerOn ? 'detected' : 'no-motion');
             buzzStateText.textContent = buzzerOn ? 'BUZZING' : 'SILENT';
             if (!buzzerOn && holdOn) setHold(false);   // pattern/beep ended or device stopped it
@@ -35,19 +37,19 @@ const PushBuzzModule = (function () {
 
         buzzToggle.addEventListener('click', async () => {
             setHold(!holdOn);
-            await BLEManager.send(`PUB buzz/set ${holdOn ? 'ON' : 'OFF'}`);
+            await BLEManager.send(`PUB buzzer/state ${holdOn ? 'ON' : 'OFF'}`);
         });
-        buzzBeep.addEventListener('click', () => BLEManager.send('PUB buzz/beep 200'));
+        buzzBeep.addEventListener('click', () => BLEManager.send('PUB buzzer/beep 200'));
         patBtns.forEach(b => b.addEventListener('click', () => {
             setHold(false);
-            BLEManager.send(`PUB buzz/play ${b.dataset.pat}`);
+            BLEManager.send(`PUB buzzer/play ${b.dataset.pat}`);
         }));
 
         // Debounce slider so we don't flood the BLE link
         buzzFreq.addEventListener('input', (e) => {
             buzzFreqVal.textContent = e.target.value;
             clearTimeout(freqTimer);
-            freqTimer = setTimeout(() => BLEManager.send(`PUB buzz/freq ${e.target.value}`), 150);
+            freqTimer = setTimeout(() => BLEManager.send(`PUB buzzer/freq ${e.target.value}`), 150);
         });
     }
 
