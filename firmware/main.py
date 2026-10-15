@@ -6,6 +6,8 @@ from machine import Pin, PWM, ADC, I2C
 from micropython import const
 import sys
 import gc
+import math
+import random
 
 # Optional pieces: if a file didn't get copied to the board (or won't compile for lack of
 # RAM) the hub still boots, with Bluetooth + whatever else works. Check the REPL for "[!]".
@@ -114,6 +116,162 @@ def fade_traffic_light(color, direction):
             target_pwm.duty(duty)
             time.sleep_ms(15)
         target_pwm.duty(0)
+
+
+# ==========================================
+# ANIMATIONS (non-blocking: one frame per call, driven from the main loop)
+# ==========================================
+RING_ANIMS = ("RAINBOW", "BREATHE", "COMET", "SCANNER", "SPARKLE",
+              "THEATER", "FIRE", "POLICE", "HEARTBEAT", "WIPE")
+TL_ANIMS = ("CYCLE", "CAUTION", "CHASE", "CROSSFADE", "STROBE")
+RING_FRAME_MS = 30
+TL_FRAME_MS = 20
+_TWO_PI = 2 * math.pi
+
+_heat = [0] * NUM_LEDS          # FIRE animation state
+
+
+def _ring_px(i, r, g, b, k=1.0):
+    """Set one pixel at intensity k (0..1), honouring RING_BRIGHTNESS. Caller does ring.write()."""
+    k = 0.0 if k < 0 else (1.0 if k > 1 else k)
+    s = k * RING_BRIGHTNESS
+    ring[i] = (int(max(0, min(255, r)) * s), int(max(0, min(255, g)) * s), int(max(0, min(255, b)) * s))
+
+
+def _hsv(h, s=1.0, v=1.0):
+    """h in degrees -> (r, g, b) 0..255."""
+    h = (h % 360) / 60.0
+    i = int(h)
+    f = h - i
+    p = v * (1 - s)
+    q = v * (1 - s * f)
+    t = v * (1 - s * (1 - f))
+    r, g, b = ((v, t, p), (q, v, p), (p, v, t), (p, q, v), (t, p, v), (v, p, q))[i % 6]
+    return int(r * 255), int(g * 255), int(b * 255)
+
+
+def _bump(x, a, b):
+    """Smooth 0..1..0 hill between a and b (used for the heartbeat)."""
+    if x < a or x >= b:
+        return 0.0
+    return math.sin(math.pi * (x - a) / (b - a))
+
+
+def ring_frame(name, t, color):
+    """Draw one frame of ring animation `name` at animation-time t (ms). color = (r, g, b)."""
+    n = NUM_LEDS
+    r, g, b = color
+
+    if name == "RAINBOW":                      # whole rainbow rotating around the ring
+        base = t * 360 // 3000
+        for i in range(n):
+            _ring_px(i, *_hsv(base + i * 360 // n))
+
+    elif name == "BREATHE":                    # slow inhale / exhale
+        k = 0.04 + 0.96 * (1 - math.cos(_TWO_PI * t / 4000)) / 2
+        for i in range(n):
+            _ring_px(i, r, g, b, k)
+
+    elif name == "COMET":                      # bright head with a fading tail, spinning
+        head = (t // 90) % n
+        for i in range(n):
+            _ring_px(i, r, g, b, 1.0 - ((head - i) % n) * 0.27)
+
+    elif name == "SCANNER":                    # Knight-Rider sweep back and forth
+        span = 2 * (n - 1)
+        p = (t // 110) % span
+        pos = p if p < n else span - p
+        for i in range(n):
+            _ring_px(i, r, g, b, 1.0 - abs(i - pos) * 0.45)
+
+    elif name == "SPARKLE":                    # random flashes that fade out
+        for i in range(n):
+            pr, pg, pb = ring[i]
+            ring[i] = (pr * 6 // 10, pg * 6 // 10, pb * 6 // 10)
+        if random.getrandbits(8) < 110:
+            _ring_px(random.randrange(n), r, g, b)
+
+    elif name == "THEATER":                    # marquee chase: every 3rd pixel
+        ph = (t // 140) % 3
+        for i in range(n):
+            _ring_px(i, r, g, b, 1.0 if i % 3 == ph else 0.0)
+
+    elif name == "FIRE":                       # flickering embers (ignores the chosen colour)
+        for i in range(n):
+            _heat[i] = max(0, _heat[i] - random.randrange(0, 40))
+        if random.getrandbits(8) < 150:
+            j = random.randrange(n)
+            _heat[j] = min(255, _heat[j] + random.randrange(110, 256))
+        for i in range(n):
+            h = (_heat[i - 1] + 2 * _heat[i] + _heat[(i + 1) % n]) // 4
+            _ring_px(i, min(255, h * 2), max(0, min(255, (h - 100) * 2)) // 2, 0)
+
+    elif name == "POLICE":                     # red / blue double flashes on opposite halves
+        slot = (t // 60) % 10
+        red = slot in (0, 2)
+        blue = slot in (5, 7)
+        for i in range(n):
+            if i < n // 2:
+                _ring_px(i, 255, 0, 0, 1.0 if red else 0.0)
+            else:
+                _ring_px(i, 0, 0, 255, 1.0 if blue else 0.0)
+
+    elif name == "HEARTBEAT":                  # lub-dub
+        ph = t % 1100
+        k = 0.04 + 0.96 * max(_bump(ph, 0, 160), 0.7 * _bump(ph, 260, 440))
+        for i in range(n):
+            _ring_px(i, r, g, b, k)
+
+    elif name == "WIPE":                       # fill up pixel by pixel, then empty again
+        s = (t // 120) % (2 * n)
+        for i in range(n):
+            lit = (i <= s) if s < n else (i > s - n)
+            _ring_px(i, r, g, b, 1.0 if lit else 0.0)
+
+    ring.write()
+
+
+def _tl_set(red, yellow, green):
+    """Set the three lamps to intensities 0..1 (squared so fades look even to the eye)."""
+    for pwm_obj, v in ((tl_pins["RED"], red), (tl_pins["YELLOW"], yellow), (tl_pins["GREEN"], green)):
+        v = 0.0 if v < 0 else (1.0 if v > 1 else v)
+        pwm_obj.duty(1023 if v >= 1.0 else int(v * v * 1023))
+
+
+def traffic_frame(name, t):
+    """Draw one frame of traffic-light animation `name` at animation-time t (ms)."""
+    if name == "CYCLE":                        # real-world sequence: green > amber > red > red+amber
+        x = t % 8000
+        if x < 3000:
+            _tl_set(0, 0, 1)
+        elif x < 4000:
+            _tl_set(0, 1, 0)
+        elif x < 7000:
+            _tl_set(1, 0, 0)
+        else:
+            _tl_set(1, 1, 0)
+
+    elif name == "CAUTION":                    # flashing amber
+        on = (t // 500) % 2 == 0
+        _tl_set(0, 1 if on else 0, 0)
+
+    elif name == "CHASE":                      # lamps light one after another
+        s = (t // 220) % 3
+        _tl_set(1 if s == 0 else 0, 1 if s == 1 else 0, 1 if s == 2 else 0)
+
+    elif name == "CROSSFADE":                  # smooth hand-over red > amber > green > red ...
+        p = (t % 3600) / 1200.0
+        v = []
+        for centre in (0, 1, 2):
+            d = abs(p - centre)
+            d = min(d, 3 - d)
+            v.append(1.0 - d)
+        _tl_set(v[0], v[1], v[2])
+
+    elif name == "STROBE":                     # emergency double flash on all lamps
+        x = t % 900
+        on = x < 80 or 160 <= x < 240
+        _tl_set(1 if on else 0, 1 if on else 0, 1 if on else 0)
 
 # --- NEW SENSOR & ACTUATOR INITIALIZATIONS ---
 
@@ -256,6 +414,16 @@ class BLEMQTTBroker:
         self._buz_i = 0
         self._buz_t = 0
 
+        # animation engine state (t = animation clock in ms, advanced by speed each frame)
+        self.ring_anim = None
+        self.ring_speed = 5            # 1 (slow) .. 10 (fast), 5 = normal
+        self._ring_t = 0
+        self._ring_last = 0
+        self.tl_anim = None
+        self.tl_speed = 5
+        self._tl_t = 0
+        self._tl_last = 0
+
         self._rx_queue = []
 
         self._advertise()
@@ -355,13 +523,22 @@ class BLEMQTTBroker:
             if payload:
                 decoded.append((conn_handle, payload))
 
-        last_servo = -1
+        # Slider-style topics: only the newest value of a burst matters.
+        coalesce = ("PUB SERVO/ANGLE", "PUB RING/SPEED", "PUB TRAFFIC/SPEED")
+        last_idx = {}
         for i, (_, p) in enumerate(decoded):
-            if p.upper().startswith("PUB SERVO/ANGLE"):
-                last_servo = i
+            up = p.upper()
+            for prefix in coalesce:
+                if up.startswith(prefix):
+                    last_idx[prefix] = i
 
         for i, (conn_handle, payload) in enumerate(decoded):
-            if payload.upper().startswith("PUB SERVO/ANGLE") and i != last_servo:
+            up = payload.upper()
+            skip = False
+            for prefix in coalesce:
+                if up.startswith(prefix) and last_idx.get(prefix) != i:
+                    skip = True
+            if skip:
                 continue
             self._parse_mqtt_packet(conn_handle, payload)
 
@@ -388,12 +565,25 @@ class BLEMQTTBroker:
             if topic == "ring/power":
                 if message == "ON":
                     self.ring_state = "ON"
-                    set_ring_color(*self.current_color)
+                    if self.ring_anim is None:
+                        set_ring_color(*self.current_color)
                     self.publish("ring/status", "POWER: ON")
                 elif message == "OFF":
                     self.ring_state = "OFF"
+                    self.ring_anim = None
                     turn_off_ring()
                     self.publish("ring/status", "POWER: OFF")
+                    self.publish("ring/status", "ANIM: NONE")
+
+            elif topic == "ring/anim":
+                self._set_ring_anim(message)
+
+            elif topic == "ring/speed":
+                try:
+                    self.ring_speed = max(1, min(10, int(message)))
+                    self.publish("ring/status", "SPEED: {}".format(self.ring_speed))
+                except ValueError:
+                    print("[!] Invalid ring speed payload")
 
             elif topic == "ring/color":
                 self._handle_color_command(message)
@@ -407,11 +597,23 @@ class BLEMQTTBroker:
                     print("[!] Invalid Servo Angle payload")
 
             elif topic == "traffic/state":
+                self._stop_tl_anim()
                 set_traffic_light(message)
                 self.publish("traffic/status", "STATE: {}".format(message))
 
+            elif topic == "traffic/anim":
+                self._set_tl_anim(message)
+
+            elif topic == "traffic/speed":
+                try:
+                    self.tl_speed = max(1, min(10, int(message)))
+                    self.publish("traffic/status", "SPEED: {}".format(self.tl_speed))
+                except ValueError:
+                    print("[!] Invalid traffic speed payload")
+
             elif topic == "traffic/fade":
                 if ":" in message:
+                    self._stop_tl_anim()
                     action, color = message.split(":", 1)
                     action, color = action.strip(), color.strip()
                     fade_traffic_light(color, action)
@@ -468,10 +670,68 @@ class BLEMQTTBroker:
                 print("[!] Invalid RGB color payload.")
                 return
 
-        if self.ring_state == "ON":
+        if self.ring_state == "ON" and self.ring_anim is None:
             set_ring_color(*self.current_color)
 
         self.publish("ring/status", "COLOR: {}".format(self.current_color))
+
+    # ---------- Animations ----------
+    def _set_ring_anim(self, name):
+        if name in ("NONE", "STOP", "OFF", ""):
+            self.ring_anim = None
+            if self.ring_state == "ON":
+                set_ring_color(*self.current_color)
+            self.publish("ring/status", "ANIM: NONE")
+        elif name in RING_ANIMS:
+            was_on = self.ring_state == "ON"
+            self.ring_state = "ON"
+            self.ring_anim = name
+            self._ring_t = 0
+            self._ring_last = time.ticks_ms()
+            for i in range(NUM_LEDS):
+                _heat[i] = 0
+            turn_off_ring()
+            if not was_on:
+                self.publish("ring/status", "POWER: ON")
+            self.publish("ring/status", "ANIM: {}".format(name))
+        else:
+            print("[!] Unknown ring animation:", name)
+
+    def _stop_tl_anim(self, lights_off=False):
+        if self.tl_anim is not None:
+            self.tl_anim = None
+            if lights_off:
+                set_traffic_light("OFF")
+            self.publish("traffic/status", "ANIM: NONE")
+
+    def _set_tl_anim(self, name):
+        if name in ("NONE", "STOP", "OFF", ""):
+            self._stop_tl_anim(lights_off=True)
+        elif name in TL_ANIMS:
+            self.tl_anim = name
+            self._tl_t = 0
+            self._tl_last = time.ticks_ms()
+            self.publish("traffic/status", "ANIM: {}".format(name))
+        else:
+            print("[!] Unknown traffic animation:", name)
+
+    def check_animations(self):
+        """Advance whichever animations are running; cheap no-op between frames."""
+        if self.ring_anim is None and self.tl_anim is None:
+            return
+        now = time.ticks_ms()
+        if self.ring_anim is not None and self.ring_state == "ON":
+            dt = time.ticks_diff(now, self._ring_last)
+            if dt >= RING_FRAME_MS:
+                self._ring_last = now
+                self._ring_t += dt * self.ring_speed // 5
+                ring_frame(self.ring_anim, self._ring_t, self.current_color)
+        if self.tl_anim is not None:
+            dt = time.ticks_diff(now, self._tl_last)
+            if dt >= TL_FRAME_MS:
+                self._tl_last = now
+                self._tl_t += dt * self.tl_speed // 5
+                traffic_frame(self.tl_anim, self._tl_t)
 
     def check_pir_sensor(self):
         current_state = pir_sensor.value()
@@ -608,6 +868,7 @@ if __name__ == "__main__":
     try:
         while True:
             _safe("process_queue", broker.process_queue)
+            _safe("anim", broker.check_animations)
             _safe("wifi", broker.poll_wifi)
             _safe("pir", broker.check_pir_sensor)
             _safe("button", broker.check_push_button)
@@ -620,6 +881,7 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print("\nShutting down...")
+        broker.ring_anim = broker.tl_anim = None
         turn_off_ring()
         set_traffic_light("OFF")
         set_buzzer_state("OFF")

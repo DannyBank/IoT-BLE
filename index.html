@@ -70,6 +70,28 @@
                     <input type="color" id="customColor" value="#ffffff" disabled>
                 </div>
             </div>
+
+            <div class="card anim-card">
+                <h3>Light Animations</h3>
+                <p class="sensor-info">Tap to start, tap again to stop. Most use the colour chosen above (Rainbow, Fire and Police bring their own).</p>
+                <div class="anim-grid" id="ringAnims">
+                    <button class="btn-anim" data-anim="RAINBOW" disabled><span class="anim-ico">&#x1F308;</span>Rainbow</button>
+                    <button class="btn-anim" data-anim="BREATHE" disabled><span class="anim-ico">&#x1F32C;&#xFE0F;</span>Breathe</button>
+                    <button class="btn-anim" data-anim="COMET" disabled><span class="anim-ico">&#x2604;&#xFE0F;</span>Comet</button>
+                    <button class="btn-anim" data-anim="SCANNER" disabled><span class="anim-ico">&#x1F440;</span>Scanner</button>
+                    <button class="btn-anim" data-anim="SPARKLE" disabled><span class="anim-ico">&#x2728;</span>Sparkle</button>
+                    <button class="btn-anim" data-anim="THEATER" disabled><span class="anim-ico">&#x1F3AD;</span>Theater</button>
+                    <button class="btn-anim" data-anim="FIRE" disabled><span class="anim-ico">&#x1F525;</span>Fire</button>
+                    <button class="btn-anim" data-anim="POLICE" disabled><span class="anim-ico">&#x1F6A8;</span>Police</button>
+                    <button class="btn-anim" data-anim="HEARTBEAT" disabled><span class="anim-ico">&#x2764;&#xFE0F;</span>Heartbeat</button>
+                    <button class="btn-anim" data-anim="WIPE" disabled><span class="anim-ico">&#x1F9F9;</span>Color Wipe</button>
+                </div>
+                <div class="color-picker-container">
+                    <label for="ringSpeed">Speed: <span id="ringSpeedVal">5</span> / 10</label>
+                    <input type="range" id="ringSpeed" min="1" max="10" step="1" value="5" disabled>
+                </div>
+                <button id="ringAnimStop" class="btn-fade" disabled>Stop animation (back to solid colour)</button>
+            </div>
         </div>
 
         <!-- TAB 2: PIR Motion Sensor -->
@@ -130,6 +152,22 @@
                         <button id="btnFadeOut" class="btn-fade" onclick="TrafficModule.fade('OUT')" disabled>Fade Out</button>
                     </div>
                 </div>
+            </div>
+
+            <div class="card anim-card">
+                <h3>Light Animations</h3>
+                <div class="anim-grid" id="tlAnims">
+                    <button class="btn-anim" data-anim="CYCLE" disabled><span class="anim-ico">&#x1F6A6;</span>Traffic Cycle</button>
+                    <button class="btn-anim" data-anim="CAUTION" disabled><span class="anim-ico">&#x26A0;&#xFE0F;</span>Caution Flash</button>
+                    <button class="btn-anim" data-anim="CHASE" disabled><span class="anim-ico">&#x1F3C3;</span>Chase</button>
+                    <button class="btn-anim" data-anim="CROSSFADE" disabled><span class="anim-ico">&#x1F30A;</span>Crossfade</button>
+                    <button class="btn-anim" data-anim="STROBE" disabled><span class="anim-ico">&#x26A1;</span>Strobe</button>
+                </div>
+                <div class="color-picker-container">
+                    <label for="tlSpeed">Speed: <span id="tlSpeedVal">5</span> / 10</label>
+                    <input type="range" id="tlSpeed" min="1" max="10" step="1" value="5" disabled>
+                </div>
+                <button id="tlAnimStop" class="btn-fade" disabled>Stop animation (lights off)</button>
             </div>
         </div>
 

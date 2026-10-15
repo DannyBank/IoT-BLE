@@ -405,3 +405,25 @@ input[type="range"] {
 }
 .link-row select:focus, .link-row input:focus { border-color: var(--accent-blue); }
 .link-row select:disabled, .link-row input:disabled { opacity: 0.5; }
+
+/* Light animations (ring + traffic) */
+#tab-ring.active, #tab-traffic.active { display: flex; flex-direction: column; gap: 16px; }
+.anim-card h3 { font-size: 1rem; }
+.anim-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.btn-anim {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 10px;
+    font-size: 0.85rem;
+    text-align: left;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.btn-anim .anim-ico { font-size: 1.15rem; line-height: 1; }
+.btn-anim.active {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
+}
+.tl-light.preview { transition: none; }

@@ -9,6 +9,10 @@ Topics published: `temt6000/light` (%), `temt6000/raw`, `aht20/temperature`, `ah
 `bmp280/temperature`, `bmp280/pressure` (hPa), `dht11/temperature`, `dht11/humidity`, `button/state`, `buzzer/status`.
 Buzzer commands: `PUB buzzer/state ON|OFF|<Hz>`, `buzzer/beep <ms>`, `buzzer/play CHIRP|ALARM|SOS`, `buzzer/freq <Hz>`.
 
+Ring animations: `PUB ring/anim RAINBOW|BREATHE|COMET|SCANNER|SPARKLE|THEATER|FIRE|POLICE|HEARTBEAT|WIPE` (or `NONE` to go back to the solid colour), `PUB ring/speed 1-10`. Status on `ring/status` (`ANIM: <name>`, `SPEED: <n>`).
+Traffic animations: `PUB traffic/anim CYCLE|CAUTION|CHASE|CROSSFADE|STROBE` (or `NONE` = lights off), `PUB traffic/speed 1-10`. Status on `traffic/status`. Sending `traffic/state` or `traffic/fade` stops a running animation; `ring/power OFF` stops the ring animation.
+Animations run from the main loop (no blocking), so Bluetooth/WiFi stay responsive. The ring animations respect `RING_BRIGHTNESS`.
+
 On boot the REPL prints `[I2C] devices found: [...]` - expect 0x38 (AHT20) and 0x76 or 0x77 (BMP280).
 
 ## WiFi (alternative to Bluetooth)
